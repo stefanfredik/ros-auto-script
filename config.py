@@ -10,7 +10,7 @@ OUTPUT_FILE = os.path.join(OUTPUT_DIR, 'dataoutput.xlsx')
 
 # Username dan password untuk login ke MikroTik
 USERNAME = 'admin'
-PASSWORD = 'Hephaistos'
+PASSWORD = ''
 
 # Buat folder jika belum ada
 os.makedirs(INPUT_DIR, exist_ok=True)
