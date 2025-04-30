@@ -1,5 +1,6 @@
 import ipaddress
 from routeros_api import RouterOsApiPool
+import config
 
 
 def getAnyInfo(ip_address, username, password):
@@ -16,6 +17,7 @@ def getAnyInfo(ip_address, username, password):
     try:
         # Koneksi ke MikroTik menggunakan API
         connection = RouterOsApiPool(ip_address, username=username, password=password, plaintext_login=True)
+
         api = connection.get_api()
 
         # Mendapatkan informasi sistem identity
@@ -46,6 +48,67 @@ def getAnyInfo(ip_address, username, password):
 
     except Exception as e:
         print(f"Failed to connect or retrieve data from {ip_address}: {e}")
+
+    return mikrotik_data
+
+def getInfo(ip_address, username, passwords):
+    # Inisialisasi dictionary hasil
+    mikrotik_data = {
+        'IP Address': ip_address,
+        'Identity Name': None,
+        'Wireless Mode': None,
+        'Frequency': None,
+        'SSID': None,
+        'Routerboard Model': None,
+    }
+
+    # Flag untuk mengecek apakah berhasil koneksi atau tidak
+    connected = False
+    connection = None
+    error = ""
+
+    for password in passwords:
+        try:
+            # Koneksi ke MikroTik menggunakan API
+            connection = RouterOsApiPool(ip_address, username=username, password=password, plaintext_login=True)
+            api = connection.get_api()
+            connected = True
+            break
+        except Exception as e:
+            error = e
+
+    if not connected:
+        print(f"Gagal terhubung {ip_address} -  Error : {error}")
+        return mikrotik_data
+
+    try:
+        # Mendapatkan informasi sistem identity
+        try:
+            system_identity = api.get_resource('/system/identity').get()[0]
+            mikrotik_data['Identity Name'] = system_identity.get('name', 'Unknown')
+        except (IndexError, KeyError):
+            print(f"Error getting identity name from {ip_address}")
+
+        # Mendapatkan informasi wireless
+        try:
+            wireless_info = api.get_resource('/interface/wireless').get()[0]
+            mikrotik_data['Wireless Mode'] = wireless_info.get('mode', 'Unknown')
+            mikrotik_data['Frequency'] = wireless_info.get('frequency', 'Unknown')
+            mikrotik_data['SSID'] = wireless_info.get('ssid', 'Unknown')
+        except (IndexError, KeyError):
+            print(f"Error getting wireless info from {ip_address}")
+
+        # Mendapatkan informasi routerboard
+        try:
+            routerboard_info = api.get_resource('/system/routerboard').get()[0]
+            mikrotik_data['Routerboard Model'] = routerboard_info.get('model', 'Unknown')
+        except (IndexError, KeyError):
+            print(f"Error getting routerboard info from {ip_address}")
+
+    finally:
+        # Tutup koneksi jika berhasil koneksi
+        if connection:
+            connection.disconnect()
 
     return mikrotik_data
 

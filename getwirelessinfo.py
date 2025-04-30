@@ -1,4 +1,4 @@
-from mikrotik.api import getAnyInfo, getIdentity
+from mikrotik.api import getAnyInfo, getIdentity,getInfo
 from utils.excel import readExcelColumn, save_to_excel
 import config
 
@@ -17,7 +17,7 @@ def main():
     for index in ip_list:
         ip = index["IP Address"]
 
-        mikrotik_info = getAnyInfo(ip, config.USERNAME, config.PASSWORD)
+        mikrotik_info = getInfo(ip, config.USERNAME, config.PASSWORD2)
         if mikrotik_info:
             results.append(mikrotik_info)
 

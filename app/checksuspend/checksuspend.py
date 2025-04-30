@@ -1,44 +1,47 @@
 import routeros_api
 import pandas as pd
 
-# Fungsi untuk mengecek status hotspot
-def check_hotspot_status(router_ip, username, password, server_name):
+def checkHotspotStatus(routerIp, username, password, serverName):
     try:
-        # Koneksi ke router Mikrotik
         connection = routeros_api.RouterOsApiPool(
-            router_ip, username=username, password=password, port=8728, plaintext_login=True
+            routerIp, username=username, password=password, port=8728, plaintext_login=True
         )
         api = connection.get_api()
-        # Mengambil data server hotspot
-        hotspot_servers = api.get_resource('/ip/hotspot').get()
-        for server in hotspot_servers:
-            if server.get('name') == server_name:
+        hotspotServers = api.get_resource('/ip/hotspot').get()
+
+        for server in hotspotServers:
+            if server.get('name') == serverName:
+                status = server.get('disabled', 'false')
                 connection.disconnect()
-                return True  # Hotspot aktif
+                return status == 'false'
+            
         connection.disconnect()
-        return False  # Hotspot tidak ditemukan atau tidak aktif
+        
+        return None
+    
     except Exception as e:
-        print(f"Error connecting to {router_ip}: {e}")
-        return None  # Gagal koneksi
+        print(f"Error connecting to {routerIp}: {e}")
+        return None
 
-# Membaca data dari file Excel
-file_path = 'datasuspend.xlsx'  # Ganti dengan path file Excel Anda
-data = pd.read_excel(file_path)
+try:
+    filePath = 'datasuspendwithip.xlsx'
+    data = pd.read_excel(filePath)
+    
+except Exception as e:
+    exit("Error saat membaca file: ", e)
 
-# Menambahkan kolom untuk status hotspot
 data['Hotspot Status'] = None
 
-# Parameter login Mikrotik
-mikrotik_username = 'admin'  # Ganti dengan username Mikrotik Anda
-mikrotik_password = 'RexusBattlefire'  # Ganti dengan password Mikrotik Anda
-hotspot_name = 'hotspot-pembayaran'
+mikrotikUsername = 'admin'
+mikrotikPassword = 'RexusBattlefire'
+hotspotName = 'hotspot-pembayaran'
 
-# Mengecek status untuk setiap pelanggan
 for index, row in data.iterrows():
-    ip_address = row['IP Address']  # Ganti dengan nama kolom yang sesuai di Excel Anda
-    customer_name = row['Nama Pelanggan']  # Ganti dengan nama kolom yang sesuai di Excel Anda
-    print(f"Checking hotspot status for {customer_name} (IP: {ip_address})")
-    status = check_hotspot_status(ip_address, mikrotik_username, mikrotik_password, hotspot_name)
+    routerIp = row['IP Address']
+    customerName = row['Nama Pelanggan']
+    print(f"Checking hotspot status for {customerName} (IP: {routerIp})")
+    
+    status = checkHotspotStatus(routerIp, mikrotikUsername, mikrotikPassword, hotspotName)
     if status is None:
         result = 'Connection Failed'
     elif status:
@@ -46,11 +49,16 @@ for index, row in data.iterrows():
     else:
         result = 'Suspend Gagal'
     
-    # Simpan hasil ke data frame dan tampilkan di console
     data.at[index, 'Hotspot Status'] = result
-    print(f"Result for {customer_name} (IP {ip_address}): {result}")
+    print(f"Result for {customerName} (IP {routerIp}): {result}")
 
-# Menyimpan hasil ke file baru
-output_file = 'hasil_verifikasi_hotspot.xlsx'
-data.to_excel(output_file, index=False)
-print(f"Hasil verifikasi disimpan di {output_file}")
+outputFile = 'data-hasil-verifikasi.xlsx'
+
+try:
+    data.to_excel(outputFile, index=False)
+except Exception as e:
+    print(f"Error writing to excel file: {e}")
+    exit()
+
+
+print(f"Hasil verifikasi disimpan di {outputFile}")

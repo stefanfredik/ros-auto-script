@@ -10,11 +10,11 @@ def add_scheduler(ip, username, password, device_name):
         api = api_pool.get_api()
         
         # Format nama file backup
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S') 
+
         serial_number = api.get_resource('/system/routerboard').get()[0]['serial-number']
         backup_filename = f"Backup-{device_name}-{serial_number}-{timestamp}"
 
-    
         #memeriksa apakah script sudah ada
         script_resource = api.get_resource('/system/script') 
         existing_scripts = script_resource.get() 
